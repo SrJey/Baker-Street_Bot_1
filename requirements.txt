@@ -1,0 +1,76 @@
+# ==================================
+# Файл: requirements.txt
+# (Список зависимостей Python)
+# ==================================
+python-telegram-bot
+psycopg2-binary
+Flask
+gunicorn
+pandas
+openpyxl
+python-dotenv
+pytz
+qrcode[pil]
+
+
+# ==================================
+# Файл: render.yaml
+# (Конфигурация для развертывания на Render.com)
+# ==================================
+services:
+  # 1. Веб-панель администратора
+  - type: web
+    name: cafe-admin-panel
+    env: python
+    plan: free # Используйте бесплатный план для начала
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn web_admin:app"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cafe-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: ADMIN_USERNAME
+        sync: false # Устанавливается вручную в панели Render
+      - key: ADMIN_PASSWORD
+        sync: false # Устанавливается вручную в панели Render
+
+  # 2. Телеграм-бот
+  - type: worker
+    name: telegram-cafe-bot
+    env: python
+    plan: free # Используйте бесплатный план для начала
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cafe-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false # Устанавливается вручную в панели Render
+      - key: ADMIN_TELEGRAM_ID
+        sync: false # Устанавливается вручную в панели Render
+      - key: TZ # Установка часового пояса для сервера
+        value: Europe/Moscow
+
+databases:
+  - name: cafe-db
+    databaseName: cafe_bot_db
+    user: cafe_bot_user
+    plan: free # Используйте бесплатный план для начала
+
+
+# ==================================
+# Файл: .env
+# (Для локального тестирования, НЕ загружайте его на GitHub)
+# ==================================
+TELEGRAM_BOT_TOKEN=ВАШ_ТОКЕН_ОТ_BOTFATHER
+ADMIN_TELEGRAM_ID=ВАШ_ТЕЛЕГРАМ_ID # Можно узнать у @userinfobot
+DATABASE_URL=postgres://user:password@host:port/database # URL вашей локальной БД
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=secure_password
